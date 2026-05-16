@@ -54,3 +54,17 @@ Après chaque incident lié au cron ou aux queues :
 - **Cause :** Le processus Drush est enfant de la session SSH — il meurt quand SSH se ferme
 - **Correct :** `nohup drush queue:run mon_queue --time-limit=3600 > /tmp/queue.log 2>&1 &`
 - **Prévention :** Toujours utiliser `nohup` + `&` pour les commandes longues en production
+
+### 2026-05-16 — Queue croissante — items jamais consommés
+
+- **Symptôme :** `drush queue:list` montre des milliers d'items qui s'accumulent sans jamais diminuer
+- **Cause :** `cron: {"time": 60}` manquant dans l'annotation `@QueueWorker` → le cron ne consomme pas la queue
+- **Correct :** Ajouter `cron = {"time" = 60}` à l'annotation + `drush cron` pour tester
+- **Prévention :** Après création d'un QueueWorker : `drush cron && drush queue:list` — vérifier que les items diminuent
+
+### 2026-05-16 — Batch timeout HTTP — `max_execution_time` trop court
+
+- **Symptôme :** Le batch s'arrête avec "Maximum execution time" après 60 secondes
+- **Cause :** `max_execution_time = 60` dans `php.ini` — trop court pour des batchs lourds
+- **Correct :** Lancer via Drush : `drush php:script mon_batch.php` → pas de timeout. OU `set_time_limit(0)` dans la première opération batch.
+- **Prévention :** Batchs lourds = `drush_backend_batch_process()` depuis une commande Drush custom
